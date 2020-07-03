@@ -1,0 +1,163 @@
+---
+title: "Practical Machine Learning"
+author: "Kailash Natarajan"
+date: "03/07/2020"
+output: html_document
+---
+# Introduction:
+We will be using machine learning to predict the outcome of given data, when the training data is given.
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+# Description:
+```{r}
+```
+Using devices such as Jawbone Up, Nike FuelBand, and Fitbit it is now possible to collect a large amount of data about personal activity relatively inexpensively. These type of devices are part of the quantified self movement - a group of enthusiasts who take measurements about themselves regularly to improve their health, to find patterns in their behavior, or because they are tech geeks. One thing that people regularly do is quantify how much of a particular activity they do, but they rarely quantify how well they do it. In this project, our goal will be to use data from accelerometers on the belt, forearm, arm, and dumbell of 6 participants. They were asked to perform barbell lifts correctly and incorrectly in 5 different ways.
+The main goal of the project is to predict the manner in which 6 participants performed the exercise.
+```{r}
+```
+# Downloading the file
+```{r}
+download.file(url="https://d396qusza40orc.cloudfront.net/predmachlearn/pml-training.csv",destfile = "trainingdata.csv")
+download.file(url="https://d396qusza40orc.cloudfront.net/predmachlearn/pml-testing.csv",destfile = "testingdata.csv")
+```
+# Reading the File:
+```{r}
+train<-read.csv("trainingdata.csv")
+test<-read.csv("testingdata.csv")
+```
+# Importing libraries
+```{r eval=FALSE}
+library(glm2)
+library(caret)
+library(rpart)
+library(randomForest)
+```
+# Data cleaning:
+```{r}
+```
+Data contains a lot of NA, which we will remove.
+Variables that have near zero variance are also removed to make prediction more accurate.
+```{r}
+library(caret) # ignore this line
+# Removing near zero variance
+NZV <- nearZeroVar(train)
+train <- train[, -NZV]
+test  <- test[, -NZV]
+# Removing variables that contain mostly NA
+AllNA    <- sapply(train, function(x) mean(is.na(x))) > 0.95
+train <- train[, AllNA==FALSE]
+test  <- test[, AllNA==FALSE]
+# Remove variables that are used as identification only,
+# these should not impact the prediction in any way, but it will,
+# if we don't remove it.
+train <- train[, -(1:5)]
+test  <- test[, -(1:5)]
+dim(train)
+```
+We now have only 54 variables as predictors.
+```{r}
+```
+# Exploratory Analysis:
+```{r}
+dim(train)
+dim(test)
+```
+Let us start with splitting data for cross validation.
+```{r}
+set.seed(1234) #To make the results reproducible
+intrain<-createDataPartition(train$classe,p=0.7,list=FALSE)
+subtrain<-train[intrain,]
+subtest<-train[-intrain,]
+```
+# Prediction:
+```{r}
+```
+We will use below 3 methods to predict the result for test set.
+```{r}
+```
+1.Random Forest
+```{r}
+```
+2.Decision Trees
+```{r}
+```
+3.Boosting
+```{r}
+```
+We will use all variables as predictors. 
+```{r}
+```
+Accuracy of each prediction model is determined by cross-validation method.
+This works by splitting training data into two sub groups where one is for training and other for testing. We have used 70:30 ratio for splitting training data.
+```{r}
+```
+## Random Forest Method 
+```{r}
+set.seed(1234)
+control <- trainControl(method="cv", number=3, verboseIter=FALSE)
+##Careful: Below line of code takes a long time to run
+forest_model<-train(classe~.,data=subtrain,method="rf",trControl=control)
+pred_values1<-predict(forest_model,newdata=subtest)
+confusionMatrix(as.factor(subtest$classe),pred_values1)
+```
+We have achieved an accuracy of 99.76%, which is really good.
+```{r}
+```
+## Decision Trees for prediction:
+```{r}
+library(rpart) # ignore this line
+set.seed(1234)
+linear_model<-rpart(classe~.,data=subtrain,method="class")
+pred_values2<-predict(linear_model,newdata=subtest,type="class")
+confusionMatrix(as.factor(subtest$classe),pred_values2)
+```
+This method gives on 74% accuracy.
+```{r}
+```
+## Boosted Model for prediction:
+```{r}
+library(gbm)
+library(glm2)
+set.seed(1234)
+control <- trainControl(method = "repeatedcv", number = 5, repeats = 1)
+##Careful: Below line of code takes a long time to run
+gbm_model<-train(classe~.,data=subtrain,method="gbm",trControl = control,verbose=FALSE)
+pred_values3<-predict(gbm_model,newdata=subtest)
+confusionMatrix(as.factor(subtest$classe),pred_values3)
+```
+This model has given us 99% accuracy, which is also really good.
+```{r}
+```
+# Prediction Results:
+```{r}
+```
+Accuracy of each method:
+```{r}
+```
+Random Forests: 99.76% accuracy
+```{r}
+```
+Decision Trees: 74%
+```{r}
+```
+Boosted model : 99.07% accuracy
+```{r}
+```
+We can see that the best model for prediction is random forest.
+```{r}
+```
+So we will use that method for predicting test set
+```{r}
+```
+# Results of test data:
+```{r}
+```
+Our final results for test data.
+```{r}
+predict(forest_model,test)
+```
+# Summary:
+```{r}
+```
+We have tried 3 methods of prediction using machine learning and used the most accurate one for our prediction purposes. 
